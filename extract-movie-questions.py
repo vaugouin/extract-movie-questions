@@ -3,10 +3,9 @@ import google.generativeai as genai
 import csv
 import time
 import os
+from dotenv import load_dotenv
 
 # --- CONFIGURATION ---
-# Replace with your actual Gemini API Key
-API_KEY = "AIzaSyAciU0P0zn2ROJs9udIozxu0xpQSUxnDUA"
 PDF_FILE_PATH = "10.000vragen-page003-012.pdf"
 OUTPUT_CSV = "movie_database_questions_001.csv"
 
@@ -14,6 +13,12 @@ OUTPUT_CSV = "movie_database_questions_001.csv"
 # Set LAST_PAGE to None to process through the end of the document.
 FIRST_PAGE = 1
 LAST_PAGE = None
+
+load_dotenv()
+
+API_KEY = os.getenv("GEMINI_API_KEY")
+if not API_KEY:
+    raise RuntimeError("Missing GEMINI_API_KEY. Set it in your .env file (GEMINI_API_KEY=...) or in the environment.")
 
 genai.configure(api_key=API_KEY)
 
