@@ -78,8 +78,12 @@ def extract_movie_questions(text):
     
     Ignore any questions about geography, science, or general history unless they 
     directly relate to a famous production.
-    
-    Format the output as a CSV with three columns: Question #, Question Text, Answer.
+
+    In each page, questions are structure on three columns: Question #, Question Text 
+    that can be on several lines, Answer that can be also on several lines. 
+
+    Format the output as a CSV with four columns: Page #, Question #, Question Text, Answer.
+    You can include line breaks in the CSV output, but only if it is relevant, like the question or answer contains an unumbered list. 
     Do not include a header or any extra text.
     
     TEXT:
@@ -121,7 +125,7 @@ def main():
     # Initialize CSV file with headers
     with open(output_csv_path, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
-        writer.writerow(["Question #", "Question Text", "Answer"])
+        writer.writerow(["Page #", "Question #", "Question Text", "Answer"])
 
     # Read PDF
     with open(pdf_path, 'rb') as pdf_file:
