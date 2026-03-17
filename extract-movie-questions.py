@@ -3,11 +3,12 @@ import google.generativeai as genai
 import csv
 import time
 import os
+import io
 from dotenv import load_dotenv
 
 # --- CONFIGURATION ---
-PDF_FILE_PATH = "10.000vragen-page003-012.pdf"
-OUTPUT_CSV = "movie_database_questions_001.csv"
+PDF_FILE_PATH = "10.000vragen.pdf"
+OUTPUT_DIR = "data"
 
 # 1-based, inclusive page range to process.
 # Set LAST_PAGE to None to process through the end of the document.
@@ -58,7 +59,60 @@ def _select_model_name():
     return "gemini-1.5-flash-latest"
 
 
-model = genai.GenerativeModel(_select_model_name())
+SELECTED_MODEL_NAME = _select_model_name()
+model = genai.GenerativeModel(SELECTED_MODEL_NAME)
+
+def _sanitize_model_csv_text(csv_text: str) -> str:
+    if not csv_text:
+        return ""
+
+    lines = str(csv_text).splitlines()
+    cleaned = []
+    in_fenced_block = False
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_fenced_block = not in_fenced_block
+            continue
+        if not in_fenced_block and stripped.lower().startswith("please provide"):
+            continue
+        if stripped:
+            cleaned.append(line)
+    return "\n".join(cleaned).strip()
+
+
+def _parse_csv_rows(csv_text: str):
+    csv_text = _sanitize_model_csv_text(csv_text)
+    if not csv_text:
+        return []
+
+    rows = []
+    try:
+        reader = csv.reader(io.StringIO(csv_text))
+        for row in reader:
+            if not row:
+                continue
+            if len(row) == 3 and [c.strip() for c in row] == ["Question #", "Question Text", "Answer"]:
+                continue
+            if len(row) == 4 and [c.strip() for c in row] == ["Page #", "Question #", "Question Text", "Answer"]:
+                continue
+            if len(row) not in (3, 4):
+                continue
+            rows.append(row)
+    except Exception:
+        return []
+
+    return rows
+
+
+def _normalize_rows_with_page(rows, page_number: int):
+    normalized = []
+    for row in rows:
+        if len(row) == 3:
+            normalized.append([str(page_number), row[0], row[1], row[2]])
+        elif len(row) == 4:
+            normalized.append([str(page_number), row[1], row[2], row[3]])
+    return normalized
 
 def extract_movie_questions(text):
     """Submits page text to Gemini to filter movie-related content."""
@@ -114,24 +168,23 @@ def extract_movie_questions(text):
 def main():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     pdf_path = os.path.join(base_dir, PDF_FILE_PATH)
-    output_csv_path = os.path.join(base_dir, OUTPUT_CSV)
+    data_dir = os.path.join(base_dir, OUTPUT_DIR)
+    os.makedirs(data_dir, exist_ok=True)
 
-    print(f"Writing output CSV to: {output_csv_path}")
+    stop_flag_path = os.path.join(data_dir, "stop-process.txt")
 
     if not os.path.exists(pdf_path):
         print("PDF file not found!")
         return
 
-    # Initialize CSV file with headers
-    with open(output_csv_path, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        writer.writerow(["Page #", "Question #", "Question Text", "Answer"])
+    pdf_base = os.path.splitext(os.path.basename(pdf_path))[0]
 
     # Read PDF
     with open(pdf_path, 'rb') as pdf_file:
         reader = PyPDF2.PdfReader(pdf_file)
         total_pages = len(reader.pages)
         start_page = max(int(FIRST_PAGE), 1)
+        start_page = max(start_page, 3)
         end_page = int(LAST_PAGE) if LAST_PAGE is not None else total_pages
         end_page = min(end_page, total_pages)
 
@@ -143,28 +196,41 @@ def main():
         print(f"Processing {pages_to_process} pages (pages {start_page}-{end_page} of {total_pages})...")
 
         for i in range(start_page - 1, end_page):
-            print(f"Extracting Page {i+1}/{total_pages}...")
+            page_number = i + 1
+            out_name = f"{pdf_base}-page-{page_number:03d}.csv"
+            out_path = os.path.join(data_dir, out_name)
+
+            if os.path.exists(out_path):
+                print(f"Skipping page {page_number} (already exists): {out_name}")
+                continue
+
+            print(f"Extracting Page {page_number}/{total_pages}...")
             page_text = reader.pages[i].extract_text()
             
             # Get filtered results from Gemini
             csv_chunk = extract_movie_questions(page_text)
+            rows = _normalize_rows_with_page(_parse_csv_rows(csv_chunk), page_number)
 
-            if csv_chunk:
-                preview = csv_chunk if len(csv_chunk) <= 1000 else (csv_chunk[:1000] + "\n...[truncated]...")
-                print("Model output:\n" + preview)
-            
-            # Append results to the grand CSV
-            if csv_chunk:
-                with open(output_csv_path, 'a', newline='', encoding='utf-8') as f:
-                    f.write(csv_chunk + "\n")
+            with open(out_path, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow(["Page #", "Question #", "Question Text", "Answer"])
+                if rows:
+                    writer.writerows(rows)
+
+            if rows:
+                print(f"Wrote {len(rows)} rows to {os.path.join(OUTPUT_DIR, out_name)}")
             else:
                 text_len = 0 if not page_text else len(str(page_text))
-                print(f"No CSV extracted for page {i+1} (extracted_text_len={text_len}).")
+                print(f"No rows extracted for page {page_number} (extracted_text_len={text_len}).")
             
             # Small delay to respect API rate limits (Free tier)
             time.sleep(2)
 
-    print(f"Extraction complete! Results saved to {OUTPUT_CSV}")
+            if os.path.exists(stop_flag_path):
+                print(f"Stop flag detected at {os.path.join(OUTPUT_DIR, 'stop-process.txt')}. Exiting gracefully.")
+                break
+
+    print(f"Extraction complete! Gemini model used for inference: {SELECTED_MODEL_NAME}")
 
 if __name__ == "__main__":
     main()
