@@ -67,3 +67,7 @@ global-light-secrets.inc.php
 citizenphilsecrets.py
 test_api.php
 updated-files/
+
+# Claude Code / agent local tooling
+.claude/
+.agents/
