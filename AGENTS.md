@@ -12,7 +12,7 @@ This is the single canonical guide for autonomous coding agents in this reposito
 
 ## Related repositories (project ecosystem)
 
-This repo is one stage of the larger **Agent BBB** movie/TV database pipeline (all siblings live under `github.com/vaugouin/<repo>`). It builds the curated cinema/TV **evaluation question dataset** — the `Page #, Question #, Question Text, Answer` CSV rows extracted here — that is consumed by the sibling `eval-text2sql` repo. `eval-text2sql` in turn uses those questions to score the `fastapi-text2sql` natural-language-to-SQL API against the shared MySQL/MariaDB database (`T_WC_*` tables). This repo has no direct dependency on the database or ChromaDB; its only output contract is the CSV schema.
+This repo is one stage of the larger **Agent BBB** movie/TV database pipeline (all siblings live under `github.com/vaugouin/<repo>`). It builds the curated cinema/TV **evaluation question dataset** — the `Page #, Question #, Question Text, Answer` CSV rows extracted here — that is consumed by the evaluation harness in `fastapi-text2sql/eval/` (until 2026 a separate `eval-text2sql` repo, since removed). That harness uses those questions to score the `fastapi-text2sql` natural-language-to-SQL API against the shared MySQL/MariaDB database (`T_WC_*` tables). This repo has no direct dependency on the database or ChromaDB; its only output contract is the CSV schema.
 
 The canonical sibling-repo roster lives in `%USERPROFILE%/Nestor/projets/t2s-backlog/topics/related-repositories.txt`.
 
