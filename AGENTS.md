@@ -52,8 +52,8 @@ This repo is **not containerized**: there is no `Dockerfile`, `docker-compose.ym
 
 ---
 
-**Last Updated**: 2026-06-03
-**Current Version**: 1.0.0
+**Last Updated**: 2026-10-17
+**Current Version**: 1.0.1
 
 ## Backlog (Nestor second-brain)
 
