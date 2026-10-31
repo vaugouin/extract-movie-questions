@@ -2,7 +2,7 @@
 
 A small Python utility that mines a large general-knowledge trivia PDF and keeps **only** the movie / TV–related questions, producing a clean CSV dataset of `Page #, Question #, Question Text, Answer` rows.
 
-It reads the source PDF one page at a time with PyPDF2, sends each page's text to Google's Gemini model with a prompt that filters out everything except questions about movies, TV series, cast/crew, awards, fictional characters, plot elements, or filming locations, and writes the filtered result to a per-page CSV. The consolidated dataset feeds the sibling `eval-text2sql` repo, which uses these questions to evaluate the `fastapi-text2sql` natural-language-to-SQL API.
+It reads the source PDF one page at a time with PyPDF2, sends each page's text to Google's Gemini model with a prompt that filters out everything except questions about movies, TV series, cast/crew, awards, fictional characters, plot elements, or filming locations, and writes the filtered result to a per-page CSV. The consolidated dataset feeds the sibling `text2sql-eval` repo, which uses these questions to evaluate the `fastapi-text2sql` natural-language-to-SQL API.
 
 For agent / contributor conventions see [AGENTS.md](AGENTS.md).
 
@@ -32,7 +32,7 @@ Configuration is split between a `.env` file and constants at the top of [`extra
 | Variable | Required | Purpose |
 |----------|----------|---------|
 | `GEMINI_API_KEY` | Yes | Google Generative AI API key. The script exits with a `RuntimeError` if it is missing. |
-| `GEMINI_MODEL` | No | Pin a specific Gemini model. If unset, the script auto-selects an available preferred model (`gemini-1.5-flash-latest`, then `-pro-latest`, then `gemini-1.0-pro`), falling back to `gemini-1.5-flash-latest`. |
+| `GEMINI_MODEL` | No | Pin a specific Gemini model. If unset, the script auto-selects an available preferred model (`gemini-1.5-flash-latest`, then `-pro-latest`, then `gemini-1.0-pro`), else the first listed model that supports `generateContent`, falling back to `gemini-1.5-flash-latest` if the model list cannot be read. |
 
 Script constants:
 
