@@ -1,5 +1,9 @@
 # AGENTS.md - Agent Guide for extract-movie-questions
 
+## Canary
+
+Start every reply with "Philippe,": no exceptions, including short replies and tool summaries.
+
 Agent rules only. What the script does, pipeline, configuration (`.env` and constants), running, stopping and resuming: @README.md (canonical). Keep it aligned with any behaviour change.
 
 ---
@@ -25,7 +29,7 @@ Plain idiomatic Python, single module, no classes, **no Hungarian notation** (un
 ---
 
 **Last Updated**: 2026-10-31
-**Current Version**: 1.0.2
+**Current Version**: 1.0.3
 
 ## Backlog (Nestor second-brain)
 
